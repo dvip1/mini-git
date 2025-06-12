@@ -1,3 +1,4 @@
+#include "components/include/add.h"
 #include "components/include/init.h"
 #include "components/include/limits.h"
 #include <stdio.h>
@@ -26,9 +27,9 @@ int main(int argc, char *argv[]) {
     return res;
   }
 
-  if (argc == 3) {
-    printf("%s \t %s\n", argv[1], argv[2]);
+  else if (strcmp(argv[1], "add") == 0) {
+    const char **path1 = (const char **)argv;
+    add(path1, argc, &err_out, path);
+    return 0;
   }
-  printf("%s\n", argv[1]);
-  return 0;
 }
