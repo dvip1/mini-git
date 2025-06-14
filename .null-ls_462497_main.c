@@ -1,4 +1,3 @@
-#include "components/include/add.h"
 #include "components/include/init.h"
 #include "components/include/limits.h"
 #include <stdio.h>
@@ -28,12 +27,10 @@ int main(int argc, char *argv[]) {
   }
 
   else if (strcmp(argv[1], "add") == 0) {
-    const char **path1 = (const char **)argv;
-    int res = add(path1, argc, &err_out, path);
-    if (res != 0) {
-      fprintf(stderr, "Error: %s\n", err_out.message);
-      return res;
+    if (argc < 3) {
+      printf("Usage: mini-git add <file-name>\n");
+      return -1;
     }
-    return 0;
   }
+  return 0;
 }
