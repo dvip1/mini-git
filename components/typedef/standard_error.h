@@ -49,4 +49,20 @@ typedef struct {
   char message[ERR_MESSAGE_SIZE];
 } standard_error;
 
+#define SET_ERROR(err, code, fmt, ...)                                         \
+  do {                                                                         \
+    if ((err)) {                                                               \
+      (err)->code = (code);                                                    \
+      snprintf((err)->message, ERR_MESSAGE_SIZE, (fmt), ##__VA_ARGS__);        \
+    }                                                                          \
+  } while (0)
+
+#define CLEAR_ERROR(err)                                                       \
+  do {                                                                         \
+    if ((err)) {                                                               \
+      (err)->code = ERR_NONE;                                                  \
+      (err)->message[0] = '\0';                                                \
+    }                                                                          \
+  } while (0)
+
 #endif
