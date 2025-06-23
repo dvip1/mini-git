@@ -4,7 +4,6 @@
 #include "../include/write_file.h"
 #include "../typedef/standard_error.h"
 #include <stdio.h>
-#include <string.h>
 
 #define CREATE_DIR(subpath)                                                    \
   do {                                                                         \
