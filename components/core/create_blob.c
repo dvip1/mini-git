@@ -86,7 +86,7 @@ int write_binary_file(const char *path, const char *content, size_t len,
       close(fd);
       snprintf(out_err->message, ERR_MESSAGE_SIZE,
                "failed to write to file '%s': %s", path, strerror(errno));
-      return ERR_WRITE_FILE_FAILED;
+      return ERR_WRITE_FAILED;
     }
     total_written += written;
   }

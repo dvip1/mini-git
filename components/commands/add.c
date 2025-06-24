@@ -1,5 +1,6 @@
 #include "../include/add.h"
 #include "../include/create_blob.h"
+#include "../include/dynamic_string_array.h"
 #include "../include/gitignore_loader.h"
 #include "../include/is_exists.h"
 #include "../include/read_file.h"
@@ -18,7 +19,7 @@ int handle_file(const char *file_path, const char *abs,
     snprintf(out_err->message, ERR_MESSAGE_SIZE, "File not found: %s",
              file_path);
     fprintf(stderr, "Warning: %s\n", out_err->message);
-    out_err->code = FILE_NOT_FOUND;
+    out_err->code = ERR_FILE_NOT_FOUND;
     return out_err->code;
   }
 
@@ -41,7 +42,8 @@ int handle_file(const char *file_path, const char *abs,
 }
 
 int handle_directory(const char *dir_path, const char *abs,
-                     standard_error *out_err) {
+                     standard_error *out_err, int *index,
+                     DynamicStringArray *arr) {
   DIR *dir = opendir(dir_path);
   if (!dir) {
     snprintf(out_err->message, ERR_MESSAGE_SIZE, "Can't open directory: %s",
@@ -68,12 +70,15 @@ int handle_directory(const char *dir_path, const char *abs,
 
     if (is_ignored(rel)) {
       continue;
+    } else {
+      insert_string(arr, arr->size, rel, out_err);
+      index++;
     }
 
     if (S_ISDIR(path_stat.st_mode)) {
-      handle_directory(full_path, abs, out_err);
+      handle_directory(full_path, abs, out_err, index, arr);
     } else if (S_ISREG(path_stat.st_mode)) {
-      handle_directory(full_path, abs, out_err);
+      handle_directory(full_path, abs, out_err, index, arr);
       int res = handle_file(full_path, abs, out_err);
       if (res != ERR_NONE)
         result = res;
@@ -90,7 +95,11 @@ int add(const char *path[], int size, standard_error *out_err,
         const char *abs) {
   char repo_path[PATH_MAX];
   snprintf(repo_path, sizeof(repo_path), "%s/.mini-git/", abs);
-
+  DynamicStringArray *arr = create_array(out_err);
+  int index = 0;
+  if (!arr) {
+    return out_err->code;
+  }
   if (is_directory_exist(repo_path) == 0) {
     snprintf(out_err->message, ERR_MESSAGE_SIZE, "mini-git not initialized");
     return (out_err->code = ERR_REPOSITORY_NOT_FOUND);
@@ -105,14 +114,12 @@ int add(const char *path[], int size, standard_error *out_err,
 
   load_gitignore(abs);
 
+  int final_result = ERR_NONE;
   // Special case: "add ."
   if (size == 3 && strcmp(path[2], ".") == 0) {
-    int res = handle_directory(abs, abs, out_err);
-    free_gitignore_patterns();
-    return res;
+    final_result = handle_directory(abs, abs, out_err, &index, arr);
+    goto cleanup;
   }
-
-  int final_result = ERR_NONE;
 
   for (int i = 2; i < size; i++) {
     char full_path[PATH_MAX];
@@ -124,19 +131,24 @@ int add(const char *path[], int size, standard_error *out_err,
       continue;
     }
 
-    if (is_ignored(path[i]))
+    if (is_ignored(path[i])) {
       continue;
-    else
-      printf("is not ignored: %s\n", path[i]);
-
+    } else {
+      insert_string(arr, arr->size, path[i], out_err);
+      index++;
+    }
     int res = S_ISDIR(path_stat.st_mode)
-                  ? handle_directory(full_path, abs, out_err)
+                  ? handle_directory(full_path, abs, out_err, &index, arr)
                   : handle_file(full_path, abs, out_err);
 
     if (res != ERR_NONE)
       final_result = res;
   }
 
+  goto cleanup;
+
+cleanup:
+  destroy_array(arr);
   free_gitignore_patterns();
   return final_result;
 }
